@@ -1,0 +1,4 @@
+---
+postgresql_package: postgresql
+postgresql_service: postgresql
+postgresql_port: 5432
