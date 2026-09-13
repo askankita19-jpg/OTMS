@@ -1,0 +1,22 @@
+---
+- name: Configure ScyllaDB listen address
+  ansible.builtin.lineinfile:
+    path: /etc/scylla/scylla.yaml
+    regexp: "^listen_address:"
+    line: "listen_address: {{ scylladb_address }}"
+    backup: true
+  notify: Restart ScyllaDB
+
+- name: Configure ScyllaDB RPC address
+  ansible.builtin.lineinfile:
+    path: /etc/scylla/scylla.yaml
+    regexp: "^rpc_address:"
+    line: "rpc_address: {{ scylladb_address }}"
+    backup: true
+  notify: Restart ScyllaDB
+
+- name: Ensure ScyllaDB is enabled and started
+  ansible.builtin.service:
+    name: "{{ scylladb_service }}"
+    state: started
+    enabled: true
