@@ -1,0 +1,5 @@
+---
+scylladb_package: scylla
+scylladb_service: scylla-server
+scylladb_port: 9042
+scylladb_address: 0.0.0.0
