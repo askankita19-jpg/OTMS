@@ -1,0 +1,22 @@
+---
+- name: Configure Redis bind address
+  ansible.builtin.lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: "^bind "
+    line: "bind {{ redis_bind_address }}"
+    backup: true
+  notify: Restart Redis
+
+- name: Configure Redis port
+  ansible.builtin.lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: "^port "
+    line: "port {{ redis_port }}"
+    backup: true
+  notify: Restart Redis
+
+- name: Ensure Redis is enabled and started
+  ansible.builtin.service:
+    name: "{{ redis_service }}"
+    state: started
+    enabled: true
