@@ -1,0 +1,10 @@
+---
+- name: Check ScyllaDB service
+  ansible.builtin.service_facts:
+
+- name: Verify ScyllaDB is running
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.services[scylladb_service + ".service"].state == "running"
+    fail_msg: "ScyllaDB service is not running."
+    success_msg: "ScyllaDB service is running."
