@@ -9,7 +9,7 @@ resource "aws_lb_target_group" "this" {
 
   protocol = "HTTP"
 
-  vpc_id = data.aws_subnet.selected.vpc_id
+  vpc_id = var.vpc_id
 
   health_check {
     path = var.health_check_path
@@ -31,12 +31,6 @@ resource "aws_lb_target_group" "this" {
     Name    = "${var.environment}-${var.service_name}-tg"
     Service = var.service_name
   }
-}
-
-
-# Get the VPC ID from the first application subnet.
-data "aws_subnet" "selected" {
-  id = var.subnet_ids[0]
 }
 
 
