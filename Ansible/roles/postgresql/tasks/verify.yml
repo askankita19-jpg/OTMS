@@ -1,0 +1,10 @@
+---
+- name: Check PostgreSQL service
+  ansible.builtin.service_facts:
+
+- name: Verify PostgreSQL is running
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.services[postgresql_service + ".service"].state == "running"
+    fail_msg: "PostgreSQL service is not running."
+    success_msg: "PostgreSQL service is running."
