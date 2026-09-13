@@ -1,0 +1,21 @@
+---
+- name: Configure PostgreSQL
+  hosts: postgresql
+  become: true
+
+  roles:
+    - postgresql
+
+- name: Configure Redis
+  hosts: redis
+  become: true
+
+  roles:
+    - redis
+
+- name: Configure ScyllaDB
+  hosts: scylladb
+  become: true
+
+  roles:
+    - scylladb
