@@ -1,0 +1,10 @@
+---
+- name: Check Redis service
+  ansible.builtin.service_facts:
+
+- name: Verify Redis is running
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.services[redis_service + ".service"].state == "running"
+    fail_msg: "Redis service is not running."
+    success_msg: "Redis service is running."
