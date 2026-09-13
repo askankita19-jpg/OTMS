@@ -35,7 +35,5 @@ output "load_balancer_arn" {
 }
 
 output "application_listener_arn" {
-  value = var.enable_https
-    ? aws_lb_listener.https[0].arn
-    : aws_lb_listener.http[0].arn
+  value = var.enable_https ? aws_lb_listener.https[0].arn : aws_lb_listener.http[0].arn
 }
