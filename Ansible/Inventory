@@ -1,8 +1,0 @@
-[postgresql]
-postgresql
-
-[redis]
-redis
-
-[scylladb]
-scylladb
