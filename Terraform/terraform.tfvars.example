@@ -1,0 +1,27 @@
+aws_region  = "us-east-1"
+environment = "dev"
+
+availability_zones = [
+  "us-east-1a",
+  "us-east-1b"
+]
+
+
+deployment_phase = "foundation"
+
+
+database_ami_id = ""
+
+# HTTPS will be added later.
+enable_https    = false
+certificate_arn = ""
+
+
+
+application_amis = {
+  frontend     = "ami-"
+  employee     = "ami-"
+  attendance   = "ami-"
+  salary       = "ami-"
+  notification = "ami-"
+}
