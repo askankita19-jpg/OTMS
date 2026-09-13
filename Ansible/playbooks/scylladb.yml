@@ -1,0 +1,7 @@
+---
+- name: Configure ScyllaDB
+  hosts: scylladb
+  become: true
+
+  roles:
+    - scylladb
