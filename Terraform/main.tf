@@ -133,16 +133,17 @@ module "application" {
 
   source = "./modules/application"
 
-  environment             = var.environment
-  service_name            = each.value.service_name
-  ami_id                  = var.application_amis[each.key]
-  instance_type           = var.application_instance_type
-  subnet_ids              = module.network.private_app_subnet_ids
-  security_group_id       = module.network.application_security_group_id
-  target_group_port       = each.value.port
-  health_check_path       = each.value.health_path
-  listener_arn            = module.network.application_listener_arn
-  listener_rule_priority  = each.value.priority
-  listener_rule_path      = each.value.path_pattern
-  iam_instance_profile    = aws_iam_instance_profile.ssm.name
+  environment            = var.environment
+  service_name           = each.value.service_name
+  ami_id                 = var.application_amis[each.key]
+  instance_type          = var.application_instance_type
+  subnet_ids             = module.network.private_app_subnet_ids
+  security_group_id      = module.network.application_security_group_id
+  vpc_id                 = module.network.vpc_id
+  target_group_port      = each.value.port
+  health_check_path      = each.value.health_path
+  listener_arn           = module.network.application_listener_arn
+  listener_rule_priority = each.value.priority
+  listener_rule_path     = each.value.path_pattern
+  iam_instance_profile   = aws_iam_instance_profile.ssm.name
 }
