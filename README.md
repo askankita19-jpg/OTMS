@@ -1,48 +1,52 @@
 # OTMS
 
-**OTMS (Organization/Online Talent Management System)** is a microservices-based application implemented as a traditional VM/EC2 deployment model.
+**OTMS (Online/Organization/Operations Tracking Management System)** is a microservices-based application deployed on AWS using a traditional VM-based DevOps architecture.
 
-This repository represents the **baseline OTMS deployment architecture**, where application delivery is automated through **Jenkins**, infrastructure is provisioned using **Terraform**, server configuration is managed using **Ansible**, and application AMIs are created using **Packer**.
+This repository implements an automated CI/CD and infrastructure workflow using **Jenkins, Terraform, Ansible, Packer, and AWS EC2**.
 
-> **Important:** Docker and Kubernetes/EKS are intentionally **not part of this repository**. They are implemented independently in the `OTMS-Docker` and `OTMS-EKS` repositories.
+The deployment is designed around immutable application artifacts, infrastructure as code, configuration management, automated validation, security checks, and controlled deployments.
 
 ---
 
 ## Architecture
 
 ```text
-                         GitHub
-                            |
-                            v
-                         Jenkins
-                            |
-              +-------------+-------------+
-              |             |             |
-              v             v             v
-        Application       Packer       Terraform
-             CI             |             |
-              |              v             v
-              |             AMI        AWS Infrastructure
-              |                              |
-              +------------------------------+
-                             |
-                           Ansible
+                         Developer
                              |
                              v
-                            EC2
+                          GitHub
                              |
-                +------------+------------+
-                |            |            |
-                v            v            v
-            Frontend       APIs        Database
-             :3000       :8080-8085    Services
+                             v
+                          Jenkins
+                             |
+              +--------------+--------------+
+              |              |              |
+              v              v              v
+          Application      Packer       Infrastructure
+              CI             |          Terraform
+              |              v              |
+              |             AMI              |
+              |              |               |
+              +--------------+---------------+
+                             |
+                             v
+                          Ansible
+                             |
+                             v
+                         AWS / EC2
+                             |
+              +--------------+--------------+
+              |              |              |
+              v              v              v
+          Frontend        Backend          Databases
+           :3000       APIs :8080-8085    PostgreSQL
+                                           Redis
+                                           ScyllaDB
 ```
 
 ---
 
 ## Application Components
-
-OTMS consists of five application services:
 
 | Component        | Technology         | Port |
 | ---------------- | ------------------ | ---: |
@@ -52,7 +56,7 @@ OTMS consists of five application services:
 | Salary API       | Java / Spring Boot | 8082 |
 | Notification API | Python             | 8085 |
 
-The application uses:
+### Databases
 
 | Database   | Port |
 | ---------- | ---: |
@@ -60,138 +64,125 @@ The application uses:
 | Redis      | 6379 |
 | ScyllaDB   | 9042 |
 
-Application/database relationships include Employee API with ScyllaDB and Redis, Attendance API with PostgreSQL and Redis, Salary API with ScyllaDB and Redis, and Notification API with ScyllaDB.
-
 ---
 
-## DevOps Technologies
-
-* AWS
-* Jenkins
-* Jenkins Shared Libraries
-* Jenkins Job DSL
-* Terraform
-* Ansible
-* Packer
-* Git
-* SonarQube
-* Trivy
-* Gitleaks
-* OWASP ZAP
-* AWS Systems Manager / SSM
-* Amazon EC2
-* Application Load Balancer
-
----
-
-## CI/CD Flow
-
-The application delivery workflow is:
+## Application Dependencies
 
 ```text
-Developer
-    |
-    v
-GitHub
-    |
-    v
-Jenkins
-    |
-    +--> Gitleaks
-    |
-    +--> Formatting / Syntax Checks
-    |
-    +--> Unit Tests
-    |
-    +--> Trivy
-    |
-    +--> SonarQube
-    |
-    +--> DAST
-    |
-    v
-Application Artifact
-    |
-    v
+Employee API
+ ├── ScyllaDB
+ └── Redis
+
+Attendance API
+ ├── PostgreSQL
+ └── Redis
+
+Salary API
+ ├── ScyllaDB
+ └── Redis
+
+Notification API
+ └── ScyllaDB
+```
+
+---
+
+## DevOps Architecture
+
+The repository uses the following technologies:
+
+* **Git** — source-code management
+* **Jenkins** — CI/CD orchestration
+* **Jenkins Shared Library** — reusable pipeline logic
+* **Jenkins Job DSL** — automated job creation
+* **Terraform** — AWS infrastructure provisioning
+* **Ansible** — server and database configuration
+* **Packer** — immutable application AMI creation
+* **SonarQube** — static code analysis
+* **Trivy** — dependency and security scanning
+* **Gitleaks** — credential and secret scanning
+* **OWASP ZAP** — dynamic application security testing where applicable
+* **AWS Systems Manager (SSM)** — management of private infrastructure
+
+---
+
+## CI Workflow
+
+Application CI performs automated validation before deployment.
+
+```text
+Checkout
+   |
+   v
+Credential / Secret Scan
+   |
+   v
+Code Formatting
+   |
+   v
+Syntax Validation
+   |
+   v
+Dependency Installation
+   |
+   v
+Unit Tests
+   |
+   v
+Dependency / License Scan
+   |
+   v
+SonarQube Analysis
+   |
+   v
+DAST where applicable
+   |
+   v
+Build Artifact
+```
+
+---
+
+## Deployment Workflow
+
+The deployment workflow follows:
+
+```text
+Application CI
+      |
+      v
+Artifact
+      |
+      v
 Packer
-    |
-    v
-AMI
-    |
-    v
+      |
+      v
+Application AMI
+      |
+      v
 Terraform
-    |
-    v
+      |
+      v
 AWS Infrastructure
-    |
-    v
+      |
+      v
 Ansible
-    |
-    v
-Application Deployment
-    |
-    v
+      |
+      v
+Application Configuration
+      |
+      v
+EC2
+      |
+      v
 Smoke Tests
 ```
 
 ---
 
-## Jenkins
+## Infrastructure
 
-Jenkins is the primary CI/CD control plane.
-
-The repository contains pipelines for:
-
-* Application CI
-* Packer
-* Ansible CI
-* Ansible CD
-* Terraform CI
-* Terraform CD
-* Terraform Destroy
-* Master orchestration
-
-The original OTMS implementation uses a master pipeline with actions such as verification, full deployment and destruction.
-
----
-
-## Jenkins Shared Library
-
-Reusable pipeline logic is maintained through a dedicated Shared Library structure.
-
-The Shared Library provides reusable functions for:
-
-* Application CI
-* Go services
-* Java services
-* Python services
-* React services
-* Packer
-* Terraform
-* Ansible
-* Notifications
-* Static analysis
-* Dependency scanning
-* Unit testing
-* DAST
-
-This keeps Jenkinsfiles small and promotes reuse across application pipelines.
-
----
-
-## Job DSL
-
-Jenkins Job DSL is used to generate and maintain the Jenkins job hierarchy.
-
-The generated jobs cover the application CI, Packer, Ansible, Terraform and orchestration workflows.
-
----
-
-## Terraform
-
-Terraform manages AWS infrastructure as code.
-
-The infrastructure includes components such as:
+Terraform manages the AWS infrastructure required by the application, including resources such as:
 
 * VPC
 * Subnets
@@ -200,203 +191,305 @@ The infrastructure includes components such as:
 * Network ACLs
 * Application Load Balancer
 * Target groups
-* EC2 instances / Auto Scaling
+* EC2 instances
+* Auto Scaling resources
 * IAM resources
-* Supporting AWS infrastructure
+* Supporting infrastructure
 
-Terraform is organized using reusable modules.
+Infrastructure is maintained as code to provide repeatable and auditable deployments.
 
 ---
 
-## Ansible
+## Configuration Management
 
-Ansible is responsible for configuration management.
+Ansible manages application and database host configuration.
 
 Database configuration includes:
 
-```text
-PostgreSQL
-Redis
-ScyllaDB
-```
+* PostgreSQL
+* Redis
+* ScyllaDB
 
-Private database hosts are managed using AWS Systems Manager/SSM rather than requiring direct public SSH access.
+Private infrastructure can be managed using AWS Systems Manager rather than requiring direct public SSH access.
 
 ---
 
-## Packer
+## Immutable AMI Strategy
 
-Packer creates application AMIs from validated application artifacts.
+Packer is used to create application AMIs from validated application artifacts.
 
-The objective is to maintain immutable, traceable application images that can be consumed by Terraform.
+The deployment process follows the principle:
 
-Artifact provenance is maintained through build metadata and hashes.
+```text
+Source Code
+    |
+    v
+CI Build
+    |
+    v
+Validated Artifact
+    |
+    v
+Packer
+    |
+    v
+Versioned AMI
+    |
+    v
+Terraform Deployment
+```
+
+Each deployment can therefore be associated with a specific application version and source revision.
+
+---
+
+## Artifact Provenance
+
+Build information should remain traceable throughout the deployment lifecycle.
+
+Important metadata includes:
+
+* Git commit SHA
+* Branch
+* CI build number
+* Artifact version
+* Artifact checksum
+* Packer build
+* AMI ID
+* Deployment information
+
+This provides a clear relationship between source code and the infrastructure running that version.
+
+---
+
+## Jenkins
+
+Jenkins acts as the primary CI/CD orchestration platform.
+
+The pipeline design supports:
+
+* Application CI
+* Packer builds
+* Ansible validation
+* Ansible deployment
+* Terraform validation
+* Terraform deployment
+* Controlled infrastructure destruction
+* Master deployment orchestration
+* Build notifications
+
+Reusable pipeline functionality is maintained through the Jenkins Shared Library.
+
+Jenkins Job DSL is used to automate Jenkins job creation and configuration.
 
 ---
 
 ## Security
 
-Security checks are integrated into the CI workflow.
+Security checks are incorporated into the CI/CD lifecycle.
 
-### Source security
+### Source Security
 
-**Gitleaks**
+**Gitleaks** is used to identify accidentally committed credentials and secrets.
 
-Detects accidentally committed credentials and secrets.
+### Static Analysis
 
-### Static analysis
+**SonarQube** is used for code-quality and static analysis.
 
-**SonarQube**
+### Dependency Security
 
-Performs code quality and static analysis.
+**Trivy** is used for dependency and vulnerability scanning.
 
-### Dependency and vulnerability scanning
+### Dynamic Testing
 
-**Trivy**
+**OWASP ZAP** can be used for dynamic application security testing where applicable.
 
-Scans dependencies and applicable artifacts for vulnerabilities.
-
-### DAST
-
-**OWASP ZAP**
-
-Provides dynamic application security testing where applicable.
+Secrets and credentials should not be committed to source control.
 
 ---
 
-## Deployment Principle
+## Deployment Principles
 
-This repository is designed to be **independently deployable**.
+This repository follows these principles:
 
-The official deployment path is:
-
-```text
-Jenkins
-   |
-   +--> CI
-   |
-   +--> Packer
-   |
-   +--> Terraform
-   |
-   +--> Ansible
-   |
-   v
-AWS EC2
-```
-
-It does not require:
-
-* `OTMS-Docker`
-* `OTMS-EKS`
-* `OTMS-Monitoring`
-
-to be deployed.
+1. Infrastructure is managed as code.
+2. Application artifacts are validated before deployment.
+3. Application AMIs are versioned and immutable.
+4. Secrets are supplied through secure configuration mechanisms.
+5. Deployment is performed through Jenkins.
+6. Private infrastructure is not exposed unnecessarily to the public internet.
+7. Deployment provenance is retained.
+8. Infrastructure changes are reviewed through Terraform plans.
+9. Destructive operations are controlled.
+10. Deployment and rollback should use known versions rather than mutable `latest` artifacts.
 
 ---
 
 ## Rollback
 
-Application deployment uses versioned artifacts and AMIs so that a previously validated version can be restored.
+Rollback should use a previously validated application version.
 
 Conceptually:
 
 ```text
-Current AMI
-     |
-     | failure
-     v
-Previous Known-Good AMI
-     |
-     v
-Terraform
-     |
-     v
-EC2
+Current Version
+      |
+      v
+Problem Detected
+      |
+      v
+Select Previous Known-Good Version
+      |
+      v
+Deploy Previous AMI
+      |
+      v
+Validate
 ```
+
+This allows failed application releases to be replaced with a known-good version.
 
 ---
 
-## Repository Evolution
-
-This repository is the first deployment generation of the OTMS project.
+## Repository Structure
 
 ```text
-OTMS
- |
- | Traditional VM deployment
- |
- v
-OTMS-Docker
- |
- | Containerization
- |
- v
-OTMS-EKS
- |
- | Kubernetes orchestration
- |
- v
-OTMS-Monitoring
- |
- | Observability
+OTMS/
+│
+├── applications/
+│   ├── frontend/
+│   ├── employee-api/
+│   ├── attendance-api/
+│   ├── salary-api/
+│   └── notification-api/
+│
+├── Jenkins/
+├── Shared_Library/
+├── Job_DSL/
+├── Terraform/
+├── Ansible/
+├── Packer/
+│
+└── README.md
 ```
 
 ---
 
-## Project Goals
+## Prerequisites
 
-The goals of this repository are to demonstrate:
+Before using the deployment pipeline, the required tooling and infrastructure access must be configured.
 
-* CI/CD automation
-* Infrastructure as Code
-* Configuration management
-* Immutable AMI-based deployments
-* Automated security checks
-* Jenkins Shared Libraries
-* Jenkins Job DSL
-* AWS infrastructure automation
-* Deployment rollback
-* Reproducible deployments
+Typical requirements include:
 
----
+* Git
+* Jenkins
+* AWS account
+* AWS IAM permissions
+* Terraform
+* Ansible
+* Packer
+* AWS CLI
+* Java
+* Python
+* Go
+* Node.js / npm
+* SonarQube
+* Trivy
+* Gitleaks
+* OWASP ZAP where applicable
 
-## Important Notes
-
-This repository represents the **traditional OTMS deployment model**.
-
-Docker and Kubernetes are intentionally separated into their own repositories:
-
-* `OTMS-Docker`
-* `OTMS-EKS`
-
-Monitoring is also maintained separately:
-
-* `OTMS-Monitoring`
-
-This separation allows every deployment model to be independently deployed and tested.
+Exact versions should be maintained according to the project's tested toolchain.
 
 ---
 
-## Project Status
+## Deployment
 
-🚧 **Under Development**
+The official deployment workflow is performed through Jenkins.
 
-The repository is being rebuilt and enhanced as part of a complete DevOps learning and portfolio project.
+A typical deployment is:
+
+```text
+1. Commit application changes
+2. Push changes to Git
+3. Start Jenkins pipeline
+4. Run application CI
+5. Validate security and code quality
+6. Create validated artifact
+7. Build application AMI
+8. Generate Terraform plan
+9. Review/validate plan
+10. Apply infrastructure
+11. Configure hosts using Ansible
+12. Deploy application
+13. Execute smoke tests
+14. Verify application health
+```
 
 ---
 
-## Related Repositories
+## Destruction
 
-* **OTMS** — Traditional EC2/AMI deployment
-* **OTMS-Docker** — Docker-based deployment
-* **OTMS-EKS** — Kubernetes/EKS deployment
-* **OTMS-Monitoring** — Monitoring and deployment orchestration
+Infrastructure must be destroyed through the controlled Jenkins/Terraform workflow.
+
+Destructive operations should require explicit confirmation and should never be triggered accidentally as part of a normal deployment.
 
 ---
 
-## Author
+## Operational Validation
 
-**Ankita**
+A deployment is considered successful only after:
 
-DevOps / Cloud Engineering Project
+* Infrastructure is available
+* Application instances are healthy
+* Required services are running
+* Database connectivity is working
+* Load balancer routing is working
+* Application endpoints respond successfully
+* Smoke tests pass
+
+---
+
+## Configuration and Secrets
+
+Environment-specific values must not be hardcoded into the repository.
+
+Sensitive values such as:
+
+* AWS credentials
+* database passwords
+* API keys
+* tokens
+* SMTP credentials
+* application secrets
+
+must be provided through secure credential/configuration mechanisms.
+
+---
+
+## Project Goal
+
+The goal of this repository is to provide a repeatable, automated, and traceable VM-based deployment platform for OTMS using established DevOps practices.
+
+The complete lifecycle is:
+
+```text
+CODE
+ ↓
+CI
+ ↓
+SECURITY
+ ↓
+ARTIFACT
+ ↓
+AMI
+ ↓
+INFRASTRUCTURE
+ ↓
+CONFIGURATION
+ ↓
+DEPLOYMENT
+ ↓
+VALIDATION
+ ↓
+ROLLBACK / DESTROY
+```
