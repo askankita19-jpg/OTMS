@@ -1,0 +1,24 @@
+---
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - gnupg
+      - apt-transport-https
+    state: present
+    update_cache: true
+
+- name: Download ScyllaDB repository script
+  ansible.builtin.get_url:
+    url: https://downloads.scylladb.com/deb/debian/scylla.list
+    dest: /etc/apt/sources.list.d/scylla.list
+    mode: "0644"
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install ScyllaDB
+  ansible.builtin.apt:
+    name: "{{ scylladb_package }}"
+    state: present
