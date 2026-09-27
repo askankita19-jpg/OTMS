@@ -538,3 +538,295 @@ resource "aws_lb_listener" "https" {
     }
   }
 }
+
+
+# ============================================================
+# Public Network ACL
+# ============================================================
+
+resource "aws_network_acl" "public" {
+  vpc_id = aws_vpc.this.id
+
+  tags = {
+    Name = "${var.environment}-otms-public-nacl"
+  }
+}
+
+resource "aws_network_acl_rule" "public_ingress_http" {
+  network_acl_id = aws_network_acl.public.id
+
+  rule_number = 100
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = "0.0.0.0/0"
+
+  from_port = 80
+  to_port   = 80
+}
+
+resource "aws_network_acl_rule" "public_ingress_https" {
+  network_acl_id = aws_network_acl.public.id
+
+  rule_number = 110
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = "0.0.0.0/0"
+
+  from_port = 443
+  to_port   = 443
+}
+
+resource "aws_network_acl_rule" "public_ingress_ephemeral" {
+  network_acl_id = aws_network_acl.public.id
+
+  rule_number = 120
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = "0.0.0.0/0"
+
+  from_port = 1024
+  to_port   = 65535
+}
+
+resource "aws_network_acl_rule" "public_egress" {
+  network_acl_id = aws_network_acl.public.id
+
+  rule_number = 100
+  egress      = true
+  protocol    = "-1"
+
+  rule_action = "allow"
+
+  cidr_block = "0.0.0.0/0"
+}
+
+resource "aws_network_acl_association" "public" {
+  count = length(aws_subnet.public)
+
+  subnet_id = aws_subnet.public[count.index].id
+
+  network_acl_id = aws_network_acl.public.id
+}
+
+
+# ============================================================
+# Application Network ACL
+# ============================================================
+
+resource "aws_network_acl" "application" {
+  vpc_id = aws_vpc.this.id
+
+  tags = {
+    Name = "${var.environment}-otms-application-nacl"
+  }
+}
+
+resource "aws_network_acl_rule" "application_ingress" {
+  network_acl_id = aws_network_acl.application.id
+
+  rule_number = 100
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = var.vpc_cidr
+
+  from_port = 3000
+  to_port   = 3000
+}
+
+resource "aws_network_acl_rule" "application_ingress_employee" {
+  network_acl_id = aws_network_acl.application.id
+
+  rule_number = 110
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = var.vpc_cidr
+
+  from_port = 8080
+  to_port   = 8080
+}
+
+resource "aws_network_acl_rule" "application_ingress_attendance" {
+  network_acl_id = aws_network_acl.application.id
+
+  rule_number = 120
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = var.vpc_cidr
+
+  from_port = 8081
+  to_port   = 8081
+}
+
+resource "aws_network_acl_rule" "application_ingress_salary" {
+  network_acl_id = aws_network_acl.application.id
+
+  rule_number = 130
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = var.vpc_cidr
+
+  from_port = 8082
+  to_port   = 8082
+}
+
+resource "aws_network_acl_rule" "application_ingress_notification" {
+  network_acl_id = aws_network_acl.application.id
+
+  rule_number = 140
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = var.vpc_cidr
+
+  from_port = 8085
+  to_port   = 8085
+}
+
+resource "aws_network_acl_rule" "application_ingress_ephemeral" {
+  network_acl_id = aws_network_acl.application.id
+
+  rule_number = 150
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = var.vpc_cidr
+
+  from_port = 1024
+  to_port   = 65535
+}
+
+resource "aws_network_acl_rule" "application_egress" {
+  network_acl_id = aws_network_acl.application.id
+
+  rule_number = 100
+  egress      = true
+  protocol    = "-1"
+
+  rule_action = "allow"
+
+  cidr_block = "0.0.0.0/0"
+}
+
+resource "aws_network_acl_association" "application" {
+  count = length(aws_subnet.private_app)
+
+  subnet_id = aws_subnet.private_app[count.index].id
+
+  network_acl_id = aws_network_acl.application.id
+}
+
+
+# ============================================================
+# Database Network ACL
+# ============================================================
+
+resource "aws_network_acl" "database" {
+  vpc_id = aws_vpc.this.id
+
+  tags = {
+    Name = "${var.environment}-otms-database-nacl"
+  }
+}
+
+resource "aws_network_acl_rule" "database_ingress_postgresql" {
+  network_acl_id = aws_network_acl.database.id
+
+  rule_number = 100
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = "10.0.10.0/23"
+
+  from_port = 5432
+  to_port   = 5432
+}
+
+resource "aws_network_acl_rule" "database_ingress_redis" {
+  network_acl_id = aws_network_acl.database.id
+
+  rule_number = 110
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = "10.0.10.0/23"
+
+  from_port = 6379
+  to_port   = 6379
+}
+
+resource "aws_network_acl_rule" "database_ingress_scylladb" {
+  network_acl_id = aws_network_acl.database.id
+
+  rule_number = 120
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = "10.0.10.0/23"
+
+  from_port = 9042
+  to_port   = 9042
+}
+
+resource "aws_network_acl_rule" "database_ingress_ephemeral" {
+  network_acl_id = aws_network_acl.database.id
+
+  rule_number = 130
+  egress      = false
+  protocol    = "tcp"
+
+  rule_action = "allow"
+
+  cidr_block = "10.0.10.0/23"
+
+  from_port = 1024
+  to_port   = 65535
+}
+
+resource "aws_network_acl_rule" "database_egress" {
+  network_acl_id = aws_network_acl.database.id
+
+  rule_number = 100
+  egress      = true
+  protocol    = "-1"
+
+  rule_action = "allow"
+
+  cidr_block = "0.0.0.0/0"
+}
+
+resource "aws_network_acl_association" "database" {
+  subnet_id = aws_subnet.private_database.id
+
+  network_acl_id = aws_network_acl.database.id
+}
