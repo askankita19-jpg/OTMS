@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Generate Jenkins Jobs') {
+            steps {
+                jobDsl(
+                    targets: 'Job_DSL/jobs/*.groovy',
+                    removedJobAction: 'DELETE',
+                    removedViewAction: 'DELETE',
+                    lookupStrategy: 'JENKINS_ROOT',
+                    sandbox: true
+                )
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'OTMS Jenkins jobs generated successfully.'
+        }
+
+        failure {
+            echo 'OTMS Seed Job failed.'
+        }
+    }
+}
