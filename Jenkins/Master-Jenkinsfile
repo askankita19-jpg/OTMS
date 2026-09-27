@@ -1,0 +1,127 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'APPLICATION',
+            choices: [
+                'frontend',
+                'employee',
+                'attendance',
+                'salary',
+                'notification'
+            ],
+            description: 'Application to deploy'
+        )
+
+        string(
+            name: 'VERSION',
+            defaultValue: '1.0.0',
+            description: 'Application version'
+        )
+
+        choice(
+            name: 'DEPLOYMENT_PHASE',
+            choices: [
+                'foundation',
+                'application'
+            ],
+            description: 'Terraform deployment phase'
+        )
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir('Terraform') {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                dir('Terraform') {
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                dir('Terraform') {
+                    sh '''
+                        terraform plan \
+                          -var="deployment_phase=${DEPLOYMENT_PHASE}"
+                    '''
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                input message: 'Approve Terraform deployment?'
+
+                dir('Terraform') {
+                    sh '''
+                        terraform apply \
+                          -auto-approve \
+                          -var="deployment_phase=${DEPLOYMENT_PHASE}"
+                    '''
+                }
+            }
+        }
+
+        stage('Packer') {
+            when {
+                expression {
+                    params.DEPLOYMENT_PHASE == 'application'
+                }
+            }
+
+            steps {
+                dir('Packer/applications') {
+                    sh '''
+                        packer init .
+                        packer fmt -check .
+                    '''
+                }
+            }
+        }
+
+        stage('Ansible') {
+            when {
+                expression {
+                    params.DEPLOYMENT_PHASE == 'application'
+                }
+            }
+
+            steps {
+                dir('Ansible') {
+                    sh '''
+                        ansible-playbook \
+                          -i inventory/hosts.ini \
+                          playbooks/databases.yml
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "OTMS deployment completed successfully."
+        }
+
+        failure {
+            echo "OTMS deployment failed."
+        }
+    }
+}
