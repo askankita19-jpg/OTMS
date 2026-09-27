@@ -476,17 +476,10 @@ Smoke Tests
 
 ## Repository Structure
 
-The OTMS repository is organized around the major DevOps components involved in the VM-based deployment:
+The OTMS repository contains the DevOps and infrastructure components used to deploy the application on AWS.
 
 ```text
 OTMS/
-│
-├── applications/
-│   ├── frontend/
-│   ├── employee-api/
-│   ├── attendance-api/
-│   ├── salary-api/
-│   └── notification-api/
 │
 ├── Jenkins/
 ├── Shared_Library/
@@ -498,7 +491,17 @@ OTMS/
 └── README.md
 ```
 
-Each area has a specific responsibility in the overall deployment process.
+The application services are maintained in their respective repositories:
+
+```text
+Frontend
+Employee API
+Attendance API
+Salary API
+Notification API
+```
+
+The OTMS repository brings these application components into the deployment lifecycle through Jenkins, Packer, Terraform, and Ansible.
 
 ---
 
