@@ -1,0 +1,73 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'otms-application'
+        VERSION = "${BUILD_NUMBER}"
+        ARTIFACT_DIR = 'artifacts'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Secret Scan') {
+            steps {
+                sh '''
+                    gitleaks detect \
+                      --source . \
+                      --no-banner \
+                      --redact
+                '''
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'bash Jenkins/scripts/build.sh'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'bash Jenkins/scripts/test.sh'
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                sh '''
+                    trivy fs \
+                      --exit-code 1 \
+                      --severity HIGH,CRITICAL \
+                      .
+                '''
+            }
+        }
+
+        stage('Package Artifact') {
+            steps {
+                sh 'bash Jenkins/scripts/package.sh'
+            }
+        }
+
+        stage('Archive Artifact') {
+            steps {
+                archiveArtifacts artifacts: 'artifacts/**', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "OTMS CI pipeline completed successfully."
+        }
+
+        failure {
+            echo "OTMS CI pipeline failed."
+        }
+    }
+}
