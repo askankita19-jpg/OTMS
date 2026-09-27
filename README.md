@@ -494,11 +494,13 @@ OTMS/
 The application services are maintained in their respective repositories:
 
 ```text
-Frontend
-Employee API
-Attendance API
-Salary API
-Notification API
+Application repositories:
+
+├── OTMS-Frontend
+├── OTMS-Employee-API
+├── OTMS-Attendance-API
+├── OTMS-Salary-API
+└── OTMS-Notification
 ```
 
 The OTMS repository brings these application components into the deployment lifecycle through Jenkins, Packer, Terraform, and Ansible.
