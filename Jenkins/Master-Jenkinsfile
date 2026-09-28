@@ -107,7 +107,7 @@ pipeline {
                 dir('Ansible') {
                     sh '''
                         ansible-playbook \
-                          -i inventory/hosts.ini \
+                          -i inventory/aws_ec2.yml \
                           playbooks/databases.yml
                     '''
                 }
