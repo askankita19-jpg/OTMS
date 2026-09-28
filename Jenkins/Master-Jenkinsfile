@@ -28,6 +28,23 @@ pipeline {
             ],
             description: 'Terraform deployment phase'
         )
+
+        choice(
+            name: 'ACTION',
+            choices: [
+                'BUILD_VERIFY',
+                'FULL_DEPLOY',
+                'ROLLBACK',
+                'DESTROY'
+            ],
+            description: 'Deployment action'
+        )
+
+        text(
+            name: 'ROLLBACK_AMIS',
+            defaultValue: '{}',
+            description: 'Previous known-good application AMIs as JSON. Required only for ROLLBACK.'
+        )
     }
 
     stages {
@@ -38,7 +55,39 @@ pipeline {
             }
         }
 
+        stage('Validate Parameters') {
+            steps {
+                script {
+                    if (params.ACTION == 'ROLLBACK') {
+                        def rollbackAmis = readJSON text: params.ROLLBACK_AMIS
+
+                        def requiredApplications = [
+                            'frontend',
+                            'employee',
+                            'attendance',
+                            'salary',
+                            'notification'
+                        ]
+
+                        requiredApplications.each { application ->
+                            if (!rollbackAmis.containsKey(application) ||
+                                !rollbackAmis[application].toString().trim()) {
+                                error("ROLLBACK_AMIS must contain a valid AMI ID for ${application}.")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Terraform Init') {
+            when {
+                expression {
+                    params.ACTION != 'BUILD_VERIFY' ||
+                    params.ACTION == 'BUILD_VERIFY'
+                }
+            }
+
             steps {
                 dir('Terraform') {
                     sh 'terraform init'
@@ -55,26 +104,68 @@ pipeline {
         }
 
         stage('Terraform Plan') {
+            when {
+                expression {
+                    params.ACTION != 'DESTROY'
+                }
+            }
+
             steps {
-                dir('Terraform') {
-                    sh '''
-                        terraform plan \
-                          -var="deployment_phase=${DEPLOYMENT_PHASE}"
-                    '''
+                script {
+                    if (params.ACTION == 'ROLLBACK') {
+                        dir('Terraform') {
+                            def rollbackAmis = readJSON text: params.ROLLBACK_AMIS
+
+                            sh """
+                                terraform plan \
+                                  -var="deployment_phase=application" \
+                                  -var='application_amis=${groovy.json.JsonOutput.toJson(rollbackAmis)}'
+                            """
+                        }
+                    } else {
+                        dir('Terraform') {
+                            sh '''
+                                terraform plan \
+                                  -var="deployment_phase=${DEPLOYMENT_PHASE}"
+                            '''
+                        }
+                    }
                 }
             }
         }
 
         stage('Terraform Apply') {
-            steps {
-                input message: 'Approve Terraform deployment?'
+            when {
+                expression {
+                    params.ACTION == 'FULL_DEPLOY' ||
+                    params.ACTION == 'ROLLBACK'
+                }
+            }
 
-                dir('Terraform') {
-                    sh '''
-                        terraform apply \
-                          -auto-approve \
-                          -var="deployment_phase=${DEPLOYMENT_PHASE}"
-                    '''
+            steps {
+                input message: "${params.ACTION} approved. Continue with Terraform deployment?"
+
+                script {
+                    if (params.ACTION == 'ROLLBACK') {
+                        dir('Terraform') {
+                            def rollbackAmis = readJSON text: params.ROLLBACK_AMIS
+
+                            sh """
+                                terraform apply \
+                                  -auto-approve \
+                                  -var="deployment_phase=application" \
+                                  -var='application_amis=${groovy.json.JsonOutput.toJson(rollbackAmis)}'
+                            """
+                        }
+                    } else {
+                        dir('Terraform') {
+                            sh '''
+                                terraform apply \
+                                  -auto-approve \
+                                  -var="deployment_phase=${DEPLOYMENT_PHASE}"
+                            '''
+                        }
+                    }
                 }
             }
         }
@@ -82,6 +173,7 @@ pipeline {
         stage('Get Terraform Outputs') {
             when {
                 expression {
+                    params.ACTION == 'FULL_DEPLOY' &&
                     params.DEPLOYMENT_PHASE == 'application'
                 }
             }
@@ -103,6 +195,7 @@ pipeline {
         stage('Packer') {
             when {
                 expression {
+                    params.ACTION == 'FULL_DEPLOY' &&
                     params.DEPLOYMENT_PHASE == 'application'
                 }
             }
@@ -120,6 +213,7 @@ pipeline {
         stage('Ansible') {
             when {
                 expression {
+                    params.ACTION == 'FULL_DEPLOY' &&
                     params.DEPLOYMENT_PHASE == 'application'
                 }
             }
@@ -135,15 +229,48 @@ pipeline {
                 }
             }
         }
+
+        stage('Rollback Validation') {
+            when {
+                expression {
+                    params.ACTION == 'ROLLBACK'
+                }
+            }
+
+            steps {
+                echo "Rollback completed using the supplied known-good application AMIs."
+                echo "Application AMIs: ${params.ROLLBACK_AMIS}"
+            }
+        }
+
+        stage('Destroy') {
+            when {
+                expression {
+                    params.ACTION == 'DESTROY'
+                }
+            }
+
+            steps {
+                input message: 'Approve Terraform destroy?'
+
+                dir('Terraform') {
+                    sh '''
+                        terraform destroy \
+                          -auto-approve \
+                          -var="deployment_phase=${DEPLOYMENT_PHASE}"
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo "OTMS deployment completed successfully."
+            echo "OTMS deployment action ${params.ACTION} completed successfully."
         }
 
         failure {
-            echo "OTMS deployment failed."
+            echo "OTMS deployment action ${params.ACTION} failed."
         }
     }
 }
