@@ -79,6 +79,27 @@ pipeline {
             }
         }
 
+        stage('Get Terraform Outputs') {
+            when {
+                expression {
+                    params.DEPLOYMENT_PHASE == 'application'
+                }
+            }
+
+            steps {
+                dir('Terraform') {
+                    script {
+                        env.ANSIBLE_SSM_BUCKET_NAME = sh(
+                            script: 'terraform output -raw ansible_ssm_bucket_name',
+                            returnStdout: true
+                        ).trim()
+                    }
+                }
+
+                echo "Ansible SSM bucket: ${env.ANSIBLE_SSM_BUCKET_NAME}"
+            }
+        }
+
         stage('Packer') {
             when {
                 expression {
@@ -108,7 +129,8 @@ pipeline {
                     sh '''
                         ansible-playbook \
                           -i inventory/aws_ec2.yml \
-                          playbooks/databases.yml
+                          playbooks/databases.yml \
+                          -e "ansible_aws_ssm_bucket_name=${ANSIBLE_SSM_BUCKET_NAME}"
                     '''
                 }
             }
