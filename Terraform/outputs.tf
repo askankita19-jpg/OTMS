@@ -43,6 +43,12 @@ output "application_asg_names" {
 }
 
 
+output "ansible_ssm_bucket_name" {
+  description = "S3 bucket used by Ansible AWS SSM for file transfer"
+  value       = aws_s3_bucket.ansible_ssm.bucket
+}
+
+
 output "database_instances" {
   description = "Database EC2 details for Ansible."
 
